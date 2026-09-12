@@ -13,7 +13,7 @@
 // Nilai di bawah ini SUDAH disesuaikan dengan alamat GitHub Pages yang
 // tertulis di shared/site-config.js (.../penjual-web/). Kalau nama repo
 // GitHub kamu berbeda, atau kamu pindah ke domain custom, ganti nilai ini.
-const BASE_PATH = '/penjual-web';
+const BASE_PATH = '/penjual-webv2';
 
 function pageUrl(path, params){
   let qs = '';
