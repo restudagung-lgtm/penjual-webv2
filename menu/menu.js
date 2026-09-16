@@ -17,7 +17,17 @@ async function init(){
 async function renderMenuList(){
   const keys = await sList('menu:' + SELLER.storeId + ':', true);
   const items = (await Promise.all(keys.map(k => sGet(k, true)))).filter(Boolean);
+  const store = await sGet('store:' + SELLER.storeId, true);
+  const limit = menuLimitFor(store);
+  const atLimit = items.length >= limit;
+
   dashContent.innerHTML = `
+  ${atLimit ? `
+  <div class="limit-banner">
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px;font-weight:700;">${ic('lock',16)} Batas menu gratis tercapai (${items.length}/${FREE_MENU_LIMIT})</div>
+    <p>Paket gratis maksimal ${FREE_MENU_LIMIT} menu aktif. Upgrade ke <strong>Premium</strong> di halaman Toko &amp; QR untuk menu tanpa batas.</p>
+    <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="goTo('/toko/')">Lihat Paket Premium</button>
+  </div>` : `
   <div class="card">
     <h3>Tambah Menu</h3>
     <div class="upload-row" style="margin-top:10px;">
@@ -34,7 +44,8 @@ async function renderMenuList(){
       <select id="mCat">${catOptionsHTML()}</select>
     </div>
     <button class="btn btn-primary" id="mAddBtn" onclick="addMenu()">Tambahkan</button>
-  </div>
+    ${!isPremium(store) ? `<p class="faint" style="margin-top:8px;">${items.length}/${FREE_MENU_LIMIT} menu terpakai di paket gratis.</p>` : ''}
+  </div>`}
   <div class="section-title">Menu kamu (${items.length})</div>
   ${items.length === 0 ? `<div class="empty">${ic('utensils',30)}<br>Belum ada menu. Tambahkan menu pertama kamu di atas.</div>` :
     items.map(m => `
@@ -66,6 +77,17 @@ async function addMenu(){
   const category = document.getElementById('mCat').value;
   const fileInput = document.getElementById('mPhoto');
   if(!name || !price){ alert('Isi nama dan harga menu.'); return; }
+
+  // Cek ulang batas paket di detik terakhir (jaga-jaga kalau ada tab lain
+  // yang juga menambah menu di saat bersamaan).
+  const store = await sGet('store:' + SELLER.storeId, true);
+  const keys = await sList('menu:' + SELLER.storeId + ':', true);
+  if(keys.length >= menuLimitFor(store)){
+    alert(`Batas ${FREE_MENU_LIMIT} menu gratis sudah tercapai. Upgrade ke Premium dulu di halaman Toko & QR untuk menambah lagi.`);
+    renderMenuList();
+    return;
+  }
+
   const btn = document.getElementById('mAddBtn');
   btn.disabled = true; btn.textContent = 'Menyimpan…';
   const id = genId();
@@ -75,7 +97,11 @@ async function addMenu(){
     try{
       const blob = await resizeImageToBlob(file, 900, 0.75);
       photoURL = await sUploadImage(`stores/${SELLER.storeId}/menu/${id}.jpg`, blob);
-    }catch(e){ console.error(e); }
+    }catch(e){
+      console.error('Gagal unggah foto menu:', e);
+      alert('Foto gagal diunggah, tapi menu tetap akan disimpan tanpa foto.\n\nPesan error: ' + (e.code || e.message || e) +
+        '\n\nKalau errornya menyebut "unauthorized" atau "permission", cek komentar di shared/firebase-config.js bagian Storage Rules.');
+    }
   }
   await sSet('menu:' + SELLER.storeId + ':' + id, {id, storeId:SELLER.storeId, name, price, category, photoURL, available:true}, true);
   renderMenuList();
@@ -128,7 +154,11 @@ async function saveEditMenu(id){
       const blob = await resizeImageToBlob(file, 900, 0.75);
       const url = await sUploadImage(`stores/${SELLER.storeId}/menu/${id}.jpg`, blob);
       if(url) m.photoURL = url;
-    }catch(e){ console.error(e); }
+    }catch(e){
+      console.error('Gagal unggah foto menu:', e);
+      alert('Foto baru gagal diunggah, perubahan lain tetap disimpan.\n\nPesan error: ' + (e.code || e.message || e) +
+        '\n\nKalau errornya menyebut "unauthorized" atau "permission", cek komentar di shared/firebase-config.js bagian Storage Rules.');
+    }
   }
   await sSet(key, m, true);
   renderMenuList();

@@ -11,6 +11,7 @@ let SELLER, dashContent, mapOpenFor = null;
 async function init(){
   SELLER = await requireSellerAuth();
   if(!SELLER) return;
+  purgeOldOrders(); // jalan di latar belakang, tidak menahan tampilan
   dashContent = renderDashShell(SELLER, 'pesanan');
   await renderOrders();
 }
@@ -23,7 +24,7 @@ async function renderOrders(){
   orders = orders.filter(o => o.storeId === SELLER.storeId).sort((a,b) => b.createdAt - a.createdAt);
   if(orders.length === 0){ dashContent.innerHTML = `<div class="empty">${ic('receipt',30)}<br>Belum ada pesanan masuk.</div>`; mountIcons(); return; }
   const totalTables = await getTotalTables();
-  dashContent.innerHTML = orders.map(o => {
+  dashContent.innerHTML = `<p class="faint" style="text-align:center;margin-bottom:10px;">${ic('clock',11)} Nota pesanan tersimpan 30 hari, lalu terhapus otomatis.</p>` + orders.map(o => {
     const canceled = o.status === 'dibatalkan';
     const idx = STATUS_FLOW.indexOf(o.status);
     const next = !canceled ? STATUS_FLOW[idx + 1] : null;

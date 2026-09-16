@@ -17,7 +17,36 @@ async function init(){
 
 async function renderStoreTab(){
   const store = await sGet('store:' + SELLER.storeId, true);
+  const premium = isPremium(store);
   dashContent.innerHTML = `
+  <div class="plan-card ${premium ? 'is-premium' : 'is-free'}">
+    <div class="row" style="align-items:flex-start;">
+      <div>
+        <h3 style="display:flex;align-items:center;gap:6px;">${premium ? ic('crown',18) : ic('store',18)} Paket ${premium ? 'Premium' : 'Gratis'}</h3>
+        <p class="muted" style="margin-top:2px;">${premium ? (planExpiryLabel(store) || 'Premium aktif') : `Maksimal ${FREE_MENU_LIMIT} menu aktif.`}</p>
+      </div>
+      ${premium ? premiumBadge(store) : ''}
+    </div>
+    <div class="plan-compare">
+      <div class="pc-col">
+        <h4>Gratis</h4>
+        <ul>
+          <li>Maks. ${FREE_MENU_LIMIT} menu aktif</li>
+          <li>QRIS, foto toko &amp; menu</li>
+          <li>Cetak/unduh QR meja</li>
+        </ul>
+      </div>
+      <div class="pc-col pc-premium">
+        <h4>${ic('crown',12)} Premium</h4>
+        <ul>
+          <li>Menu tanpa batas</li>
+          <li>Badge Premium di web pembeli</li>
+          <li>Semua fitur Gratis</li>
+        </ul>
+      </div>
+    </div>
+    <p class="faint" style="margin-top:10px;">Upgrade paket dikelola manual oleh admin alun-alun (bukan pembayaran otomatis) -- hubungi admin untuk aktivasi Premium.</p>
+  </div>
   <div class="card">
     <div class="row" style="align-items:flex-start;">
       <h3>Rating Toko</h3>
@@ -84,14 +113,14 @@ async function uploadStorePhoto(input){
   try{
     const blob = await resizeImageToBlob(file, 1000, 0.78);
     const url = await sUploadImage(`stores/${SELLER.storeId}/photo.jpg`, blob);
-    if(!url){ alert('Gagal mengunggah foto. Pastikan Firebase Storage sudah diaktifkan (lihat shared/firebase-config.js).'); label.textContent = oldLabel; return; }
     const store = await sGet('store:' + SELLER.storeId, true) || {id: SELLER.storeId};
     store.photoURL = url;
     await sSet('store:' + SELLER.storeId, store, true);
     label.textContent = 'Ganti foto toko';
   }catch(e){
-    console.error(e);
-    alert('Gagal memproses foto.');
+    console.error('Gagal unggah foto toko:', e);
+    alert('Gagal mengunggah foto.\n\nPesan error: ' + (e.code || e.message || e) +
+      '\n\nKalau errornya menyebut "unauthorized" atau "permission", cek komentar di shared/firebase-config.js bagian Storage Rules.');
     label.textContent = oldLabel;
   }
 }
@@ -112,7 +141,6 @@ async function uploadQrisPhoto(input){
     const payload = await decodeQRISFromFile(file);
     const blob = await resizeImageToBlob(file, 700, 0.85);
     const url = await sUploadImage(`stores/${SELLER.storeId}/qris.jpg`, blob);
-    if(!url){ alert('Gagal mengunggah QRIS. Pastikan Firebase Storage sudah diaktifkan.'); label.textContent = oldLabel; return; }
     const store = await sGet('store:' + SELLER.storeId, true) || {id: SELLER.storeId};
     store.qrisImage = url;
     store.qrisPayload = payload || null;
@@ -123,8 +151,10 @@ async function uploadQrisPhoto(input){
       : 'Gambar tersimpan, tapi kodenya belum terbaca otomatis (coba foto lebih tegak lurus & terang). Pembeli tetap bisa bayar manual dengan mencocokkan nominal.';
     mountIcons();
   }catch(e){
-    console.error(e);
-    alert('Gagal memproses gambar QRIS.');
+    console.error('Gagal unggah QRIS:', e);
+    statusMsg.textContent = '';
+    alert('Gagal mengunggah QRIS.\n\nPesan error: ' + (e.code || e.message || e) +
+      '\n\nKalau errornya menyebut "unauthorized" atau "permission", cek komentar di shared/firebase-config.js bagian Storage Rules.');
     label.textContent = oldLabel;
   }
 }

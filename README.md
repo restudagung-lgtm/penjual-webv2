@@ -69,6 +69,26 @@ const BASE_PATH = '/penjual-web';
 4. **Deploy**: push folder ini ke repo GitHub, aktifkan GitHub Pages, lalu
    cek `BASE_PATH` di atas sudah cocok dengan nama repo-nya.
 
+## Paket Gratis vs Premium
+
+Toko baru otomatis mulai di paket **Gratis** (maksimal 5 menu aktif). Status
+**Premium** (menu tanpa batas + badge di web pembeli) **dikelola manual oleh
+admin alun-alun** lewat halaman `/toko/` di web admin — situs ini tidak
+tersambung ke payment gateway apa pun, jadi tidak ada tagihan otomatis.
+Alurnya: penjual bayar langganan langsung ke pengelola alun-alun (tunai/
+transfer di luar sistem), lalu admin menekan tombol "Aktifkan Premium" di
+web admin. Aturan & batasnya ada di `shared/plan.js`.
+
+## Retensi nota pesanan (30 hari)
+
+Nota/riwayat pesanan otomatis dihapus setelah 30 hari lewat `shared/cleanup.js`.
+Karena situs ini file statis tanpa server sendiri, pembersihan ini berjalan
+**setiap kali halaman "Pesanan" dibuka** (dibatasi maksimal sekali tiap 6 jam
+per perangkat) — bukan proses latar belakang 24 jam yang jalan sendiri tanpa
+ada yang membuka situsnya. Kalau butuh retensi yang benar-benar berjalan
+sendiri tanpa bergantung kunjungan, itu perlu Firebase Cloud Functions
+berjadwal (paket Blaze) yang di luar cakupan situs statis ini.
+
 ## Fitur QRIS dinamis
 
 Saat mengunggah foto QRIS di halaman **Toko & QR**, sistem otomatis mencoba
