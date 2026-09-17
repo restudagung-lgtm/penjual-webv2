@@ -13,28 +13,41 @@ penjual-web/
 ├── index.html            halaman utama: masuk / daftar toko baru
 ├── login.js               skrip untuk index.html
 ├── menu/
-│   ├── index.html         tambah / edit / hapus menu
+│   ├── index.html         tambah / edit / hapus menu (+batas paket Gratis)
 │   └── menu.js
 ├── pesanan/
 │   ├── index.html         pesanan masuk, ubah status, lihat lokasi pembeli
 │   └── pesanan.js
-├── toko/
-│   ├── index.html         profil toko, foto toko, QRIS, cetak/unduh QR meja
-│   └── toko.js
+├── qr-meja/
+│   ├── index.html         cetak/unduh QR meja
+│   └── qr-meja.js
 ├── ringkasan/
 │   ├── index.html         statistik ringkas (pesanan, pendapatan, rating)
 │   └── ringkasan.js
+├── profil/
+│   ├── index.html         PUSAT PENGATURAN: foto profil toko, info toko,
+│   │                      QRIS, status langganan, ganti password, keluar
+│   └── profil.js          (dibuka lewat avatar bundar di pojok kanan atas)
 └── shared/                 file yang dipakai bersama semua halaman di atas
     ├── firebase-config.js
     ├── storage.js
     ├── utils.js            fungsi bantu umum, ikon, QRIS dinamis, rating, dst.
     ├── categories.js        daftar kategori menu/toko
+    ├── plan.js               aturan paket Gratis/Premium
+    ├── cleanup.js            retensi nota pesanan 30 hari
     ├── auth-guard.js        cek sesi login di tiap halaman dashboard
-    ├── nav.js                kerangka topbar + tab bar bawah dashboard
+    ├── nav.js                kerangka topbar (+avatar) & tab bar bawah
     ├── paths.js              BASE_PATH & fungsi pindah halaman (goTo/pageUrl)
     ├── site-config.js        alamat web PEMBELI
     └── style.css
 ```
+
+Avatar bundar di pojok kanan atas (foto profil toko, atau ikon toko kalau
+belum ada foto) ada di semua halaman dashboard -- diklik akan membuka
+halaman **/profil/**, pusat pengaturan toko: ganti foto profil, edit info
+toko, unggah QRIS, lihat status langganan, ganti password, dan keluar.
+Kelola foto per-menu tetap di halaman **/menu/** (karena tiap menu punya
+fotonya sendiri-sendiri), tapi ada jalan pintas ke sana dari halaman Profil.
 
 Karena tiap halaman dashboard berdiri sendiri (bukan SPA), setiap halaman
 yang butuh login memanggil `requireSellerAuth()` (dari `shared/auth-guard.js`)
@@ -43,7 +56,7 @@ balik ke halaman masuk.
 
 ## PENTING: `BASE_PATH` di `shared/paths.js`
 
-Karena semua tombol/link di sini memakai path seperti `/menu/`, `/toko/`,
+Karena semua tombol/link di sini memakai path seperti `/menu/`, `/qr-meja/`,
 dst., situs ini perlu tahu di subfolder mana dia berjalan kalau di-deploy
 lewat **GitHub Pages project site** (`https://username.github.io/nama-repo/`).
 

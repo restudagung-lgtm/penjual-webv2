@@ -2,8 +2,8 @@
   paths.js
   --------
   Situs penjual terdiri dari beberapa halaman terpisah: halaman utama (login
-  / daftar) di root "/", lalu /menu/, /pesanan/, /toko/, /ringkasan/ untuk
-  masing-masing bagian dashboard.
+  / daftar) di root "/", lalu /menu/, /pesanan/, /qr-meja/, /ringkasan/,
+  dan /profil/ (dibuka lewat avatar bundar) untuk masing-masing bagian dashboard.
 */
 
 // BASE_PATH dipakai kalau situs ini di-deploy di dalam subfolder, misalnya

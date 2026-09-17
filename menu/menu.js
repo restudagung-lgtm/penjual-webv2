@@ -26,7 +26,7 @@ async function renderMenuList(){
   <div class="limit-banner">
     <div style="display:flex;align-items:center;justify-content:center;gap:6px;font-weight:700;">${ic('lock',16)} Batas menu gratis tercapai (${items.length}/${FREE_MENU_LIMIT})</div>
     <p>Paket gratis maksimal ${FREE_MENU_LIMIT} menu aktif. Upgrade ke <strong>Premium</strong> di halaman Toko &amp; QR untuk menu tanpa batas.</p>
-    <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="goTo('/toko/')">Lihat Paket Premium</button>
+    <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="goTo('/profil/')">Lihat Paket Premium</button>
   </div>` : `
   <div class="card">
     <h3>Tambah Menu</h3>

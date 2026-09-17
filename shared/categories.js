@@ -2,7 +2,7 @@
   categories.js
   -------------
   Daftar kategori menu/toko, dipakai bersama oleh halaman daftar toko baru
-  (root), kelola menu (/menu/), dan profil toko (/toko/) -- supaya
+  (root), kelola menu (/menu/), dan profil toko (/profil/) -- supaya
   daftarnya selalu konsisten di semua tempat.
 */
 const CATS = [
