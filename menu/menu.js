@@ -43,19 +43,28 @@ async function renderMenuList(){
     <div class="field"><label>Kategori</label>
       <select id="mCat">${catOptionsHTML()}</select>
     </div>
+    <div class="field"><label>Stok (kosongkan kalau tidak dibatasi)</label><input id="mStock" type="number" min="0" placeholder="contoh: 20"></div>
+    <p class="faint" style="margin-top:-10px;">Kalau diisi, menu otomatis berubah jadi "Habis" ke pembeli saat stoknya habis.</p>
     <button class="btn btn-primary" id="mAddBtn" onclick="addMenu()">Tambahkan</button>
     ${!isPremium(store) ? `<p class="faint" style="margin-top:8px;">${items.length}/${FREE_MENU_LIMIT} menu terpakai di paket gratis.</p>` : ''}
   </div>`}
   <div class="section-title">Menu kamu (${items.length})</div>
   ${items.length === 0 ? `<div class="empty">${ic('utensils',30)}<br>Belum ada menu. Tambahkan menu pertama kamu di atas.</div>` :
-    items.map(m => `
+    items.map(m => {
+      const hasStock = m.stock !== undefined && m.stock !== null && m.stock !== '';
+      const outOfStock = hasStock && Number(m.stock) <= 0;
+      return `
     <div id="mrow-${m.id}">
     <div class="menu-card">
       <div class="menu-thumb" style="${m.photoURL ? `background-image:url('${m.photoURL}')` : ''}">${m.photoURL ? '' : ic(catMeta(m.category).icon,24)}</div>
       <div class="menu-info">
         <div class="menu-name">${escapeHtml(m.name)}</div>
         <div class="menu-price">${rupiah(m.price)}</div>
-        <div class="faint">${catMeta(m.category).label}</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px;">
+          <span class="faint">${catMeta(m.category).label}</span>
+          ${m.ratingCount ? ratingBadge(m) : ''}
+          ${outOfStock ? '<span class="badge badge-habis">Habis</span>' : (hasStock ? `<span class="faint">Stok: ${m.stock}</span>` : '')}
+        </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
         <div class="switch ${m.available !== false ? 'on' : ''}" onclick="toggleMenu('${m.id}', ${m.available === false})"><div class="knob"></div></div>
@@ -66,7 +75,8 @@ async function renderMenuList(){
       </div>
     </div>
     <div id="editbox-${m.id}"></div>
-    </div>`).join('')}
+    </div>`;
+    }).join('')}
   `;
   mountIcons();
 }
@@ -75,6 +85,8 @@ async function addMenu(){
   const name = document.getElementById('mName').value.trim();
   const price = Number(document.getElementById('mPrice').value);
   const category = document.getElementById('mCat').value;
+  const stockRaw = document.getElementById('mStock').value;
+  const stock = stockRaw === '' ? null : Math.max(0, Number(stockRaw));
   const fileInput = document.getElementById('mPhoto');
   if(!name || !price){ alert('Isi nama dan harga menu.'); return; }
 
@@ -103,7 +115,7 @@ async function addMenu(){
         '\n\nKalau errornya menyebut "unauthorized" atau "permission", cek komentar di shared/firebase-config.js bagian Storage Rules.');
     }
   }
-  await sSet('menu:' + SELLER.storeId + ':' + id, {id, storeId:SELLER.storeId, name, price, category, photoURL, available:true}, true);
+  await sSet('menu:' + SELLER.storeId + ':' + id, {id, storeId:SELLER.storeId, name, price, category, stock, photoURL, available:true}, true);
   renderMenuList();
 }
 
@@ -129,6 +141,7 @@ async function openEditMenu(id){
     <div class="field"><label>Kategori</label>
       <select id="eCat-${id}">${catOptionsHTML(m.category)}</select>
     </div>
+    <div class="field"><label>Stok (kosongkan kalau tidak dibatasi)</label><input id="eStock-${id}" type="number" min="0" value="${m.stock === undefined || m.stock === null ? '' : m.stock}" placeholder="contoh: 20"></div>
     <div style="display:flex;gap:10px;">
       <button class="btn btn-primary" onclick="saveEditMenu('${id}')">Simpan</button>
       <button class="btn btn-outline" onclick="document.getElementById('editbox-${id}').innerHTML=''">Batal</button>
@@ -145,6 +158,8 @@ async function saveEditMenu(id){
   const name = document.getElementById('eName-' + id).value.trim();
   const price = Number(document.getElementById('ePrice-' + id).value);
   const category = document.getElementById('eCat-' + id).value;
+  const stockRaw = document.getElementById('eStock-' + id).value;
+  m.stock = stockRaw === '' ? null : Math.max(0, Number(stockRaw));
   if(!name || !price){ document.getElementById('eMsg-' + id).textContent = 'Isi nama dan harga.'; return; }
   m.name = name; m.price = price; m.category = category;
   const fileInput = document.getElementById('ePhoto-' + id);

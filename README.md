@@ -112,3 +112,12 @@ m-banking apa pun karena semuanya memakai standar QRIS yang sama. Kalau
 gambar gagal terbaca (misalnya buram/miring), fitur nominal otomatis tidak
 aktif, tapi gambar tetap tersimpan sebagai QRIS statis biasa (pembeli
 mencocokkan nominal secara manual).
+
+## Pembaruan tampilan & fitur terbaru
+
+- **Tema terang** (sebelumnya gelap), tetap mobile-first.
+- **Stok menu**: field stok opsional di form tambah/edit menu -- kalau diisi, menu otomatis "Habis" ke pembeli saat stok 0, dan berkurang otomatis tiap ada pesanan masuk.
+- **Jam operasional & saklar Buka/Tutup**: di halaman `/profil/`, ada saklar manual "Toko sedang buka" (yang benar-benar mengunci pemesanan) plus jam buka/tutup sebagai info teks untuk pembeli.
+- **Promo/diskon**: satu kode promo aktif per toko, diatur di `/profil/`, pembeli memasukkannya saat checkout.
+- **Ulasan pembeli**: daftar rating & komentar per menu dari pembeli, tampil di halaman `/profil/`.
+- **Cetak nomor pesanan**: tombol cetak di tiap kartu pesanan (`/pesanan/`) untuk slip dapur sederhana.

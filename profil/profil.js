@@ -64,6 +64,25 @@ function render(){
       <p id="stMsg" class="muted" style="margin-top:8px;"></p>
     </div>
 
+    <div class="section-title">Jam Operasional</div>
+    <div class="card">
+      <div class="row">
+        <div>
+          <h3 style="font-size:14.5px;">Toko sedang buka</h3>
+          <p class="muted" style="margin:2px 0 0;">Kalau dimatikan, pembeli lihat menunya tapi tidak bisa checkout.</p>
+        </div>
+        <div class="switch ${store.isOpen !== false ? 'on' : ''}" onclick="toggleOpenStatus(this)"><div class="knob"></div></div>
+      </div>
+      <div style="border-top:1px solid var(--line);margin:14px 0;"></div>
+      <div class="row" style="gap:10px;">
+        <div class="field" style="flex:1;margin-bottom:0;"><label>Jam buka</label><input id="stOpenTime" type="time" value="${store.openTime || ''}"></div>
+        <div class="field" style="flex:1;margin-bottom:0;"><label>Jam tutup</label><input id="stCloseTime" type="time" value="${store.closeTime || ''}"></div>
+      </div>
+      <p class="faint" style="margin-top:8px;">Ini cuma teks info untuk pembeli (misalnya "Buka 08:00–21:00") -- yang benar-benar mengunci pemesanan adalah saklar di atas, supaya tidak meleset karena jam HP yang beda-beda.</p>
+      <button class="btn btn-outline" style="margin-top:10px;" onclick="saveHours()">Simpan Jam Operasional</button>
+      <p id="hoursMsg" class="muted" style="margin-top:8px;"></p>
+    </div>
+
     <div class="section-title">QRIS Pembayaran</div>
     <div class="card">
       <p class="muted" style="margin:0 0 10px;">Unggah gambar QRIS toko kamu. Nominal transaksi otomatis disisipkan ke kode ini setiap pembeli checkout, dan tetap bisa dipindai GoPay, OVO, DANA, ShopeePay, atau m-banking apa pun.</p>
@@ -73,6 +92,17 @@ function render(){
         <span class="ph-ic">${ic('qr-code',20)}</span><span id="qrisPhotoLabel">${store.qrisImage ? 'Ganti gambar QRIS' : 'Unggah gambar QRIS'}</span>
       </label>
       <p id="qrisStatusMsg" class="muted" style="margin-top:8px;">${store.qrisPayload ? ic('check',13)+' Nominal otomatis aktif.' : (store.qrisImage ? 'Gambar tersimpan, tapi belum bisa dibaca otomatis untuk nominal.' : '')}</p>
+    </div>
+
+    <div class="section-title">Promo &amp; Diskon</div>
+    <div class="card">
+      <p class="muted" style="margin:0 0 10px;">Satu kode promo aktif per toko. Kosongkan kode untuk menonaktifkan promo.</p>
+      <div class="field"><label>Kode promo</label><input id="promoCode" type="text" value="${escapeHtml(store.promo?.code || '')}" placeholder="contoh: HEMAT10" style="text-transform:uppercase;"></div>
+      <div class="field"><label>Diskon (%)</label><input id="promoPercent" type="number" min="1" max="90" value="${store.promo?.percent || ''}" placeholder="contoh: 10"></div>
+      <div class="field"><label>Berlaku sampai (opsional)</label><input id="promoUntil" type="date" value="${store.promo?.validUntil ? new Date(store.promo.validUntil).toISOString().slice(0,10) : ''}"></div>
+      <button class="btn btn-outline" onclick="savePromo()">Simpan Promo</button>
+      <p id="promoMsg" class="muted" style="margin-top:8px;"></p>
+      ${store.promo?.code ? `<p class="faint" style="margin-top:6px;">${ic('check',12)} Promo aktif: <strong>${escapeHtml(store.promo.code)}</strong> (${store.promo.percent}%)${store.promo.validUntil ? ' sampai ' + new Date(store.promo.validUntil).toLocaleDateString('id-ID') : ''}</p>` : ''}
     </div>
 
     <div class="section-title">Langganan</div>
@@ -117,9 +147,13 @@ function render(){
       <p id="passMsg" class="muted" style="margin-top:8px;"></p>
     </div>
 
+    <div class="section-title">Ulasan Pembeli</div>
+    <div id="reviewsBox" class="card"><div class="empty" style="padding:20px;">${ic('loader-2',20)} Memuat ulasan…</div></div>
+
     <button class="btn btn-danger" style="margin-top:6px;" onclick="doLogout()">${ic('log-out',16)} Keluar</button>
   </div>`;
   mountIcons();
+  loadReviews();
 }
 
 async function uploadAvatarPhoto(input){
@@ -199,6 +233,64 @@ async function changePassword(){
   await sSet('seller:' + SELLER.username, acc, true);
   msg.textContent = 'Password diperbarui.';
   document.getElementById('newPass').value = '';
+}
+
+async function toggleOpenStatus(el){
+  const nowOpen = !el.classList.contains('on');
+  el.classList.toggle('on', nowOpen);
+  store.isOpen = nowOpen;
+  await sSet('store:' + SELLER.storeId, store, true);
+}
+
+async function saveHours(){
+  store.openTime = document.getElementById('stOpenTime').value || null;
+  store.closeTime = document.getElementById('stCloseTime').value || null;
+  await sSet('store:' + SELLER.storeId, store, true);
+  document.getElementById('hoursMsg').textContent = 'Tersimpan.';
+}
+
+async function savePromo(){
+  const code = document.getElementById('promoCode').value.trim().toUpperCase();
+  const percent = Number(document.getElementById('promoPercent').value);
+  const untilStr = document.getElementById('promoUntil').value;
+  const msg = document.getElementById('promoMsg');
+  if(!code){
+    store.promo = null;
+    await sSet('store:' + SELLER.storeId, store, true);
+    msg.textContent = 'Promo dinonaktifkan.';
+    render();
+    return;
+  }
+  if(!percent || percent < 1 || percent > 90){ msg.textContent = 'Isi diskon antara 1-90%.'; return; }
+  store.promo = {
+    code,
+    percent,
+    validUntil: untilStr ? new Date(untilStr + 'T23:59:59').getTime() : null
+  };
+  await sSet('store:' + SELLER.storeId, store, true);
+  msg.textContent = 'Promo tersimpan.';
+  render();
+}
+
+async function loadReviews(){
+  const box = document.getElementById('reviewsBox');
+  const keys = await sList('review:' + SELLER.storeId + ':', true);
+  const reviews = (await Promise.all(keys.map(k => sGet(k, true)))).filter(Boolean).sort((a,b) => b.createdAt - a.createdAt);
+  if(reviews.length === 0){
+    box.innerHTML = `<p class="muted" style="text-align:center;margin:0;">Belum ada ulasan dari pembeli.</p>`;
+    return;
+  }
+  box.innerHTML = reviews.slice(0, 20).map(r => {
+    const avg = r.items.reduce((a,it) => a+it.rating, 0) / r.items.length;
+    return `<div class="review-item">
+      <div class="review-head">
+        <span style="font-weight:700;font-size:13px;">${r.items.map(it => escapeHtml(it.name)).join(', ')}</span>
+        ${renderStars(avg, 13)}
+      </div>
+      ${r.comment ? `<p class="review-comment">"${escapeHtml(r.comment)}"</p>` : ''}
+      <p class="faint" style="margin:2px 0 0;">${new Date(r.createdAt).toLocaleDateString('id-ID')}</p>
+    </div>`;
+  }).join('');
 }
 
 init();
